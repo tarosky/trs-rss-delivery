@@ -104,7 +104,7 @@ abstract class AbstractFeed extends Singleton {
     protected function get_feed_build_date( $format ) {
 	    $feed_build_date = '';
         if ( function_exists( 'get_feed_build_date' ) ) {
-            $feed_build_date = $this->to_local_time( get_feed_build_date(), $format, get_option('timezone_string'), true );
+            $feed_build_date = $this->to_local_time( get_feed_build_date( $format ), $format, get_option('timezone_string'), true );
         } else {
             $date = get_lastpostmodified( 'GMT' );
             $date = $date ? mysql2date( $format, $date, false ) : date( $format );
