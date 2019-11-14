@@ -143,6 +143,9 @@ class ExtendLine extends Line {
             $mime_type = finfo_buffer( $finfo, $img_data );
             finfo_close( $finfo );
         }
+
+        $related_links = get_post_meta( get_the_ID(), '_related_links', true );
+        $related_count = 0;
 		?>
 			<item>
 				<guid><?php the_guid(); ?></guid>
@@ -157,7 +160,27 @@ class ExtendLine extends Line {
 				<oa:lastPubDate><?php echo $this->to_local_time( get_post_modified_time( 'Y-m-d H:i:s' ), 'r', 'Asia/Tokyo' ) ?></oa:lastPubDate>
 				<oa:pubStatus><?php echo $status; ?></oa:pubStatus>
 
-				<?php
+                <?php if ( $related_links ) : ?>
+                    <?php foreach ( $related_links as $link ) : ?>
+                        <?php
+                        $related_url = $link['url'];
+                        $related_title = $link['title'];
+
+                        if ( $related_url && $related_title ) :
+                            if ( $related_count >= 5 ) {
+                                break;
+                            }
+                            $related_count++;
+                            ?>
+                            <oa:reflink>
+                                <oa:refTitle><![CDATA[<?php echo esc_attr( $related_title ); ?>]]></oa:refTitle>
+                                <oa:refUrl><?php echo esc_url( $related_url ); ?></oa:refUrl>
+                            </oa:reflink>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+
+                <?php
 					do_action( 'rss2_item', [ $this, 'rss_add_item' ] );
 				?>
 

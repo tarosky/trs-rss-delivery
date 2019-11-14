@@ -162,6 +162,9 @@ class ExtendGunosy extends Gunosy {
             $mime_type = finfo_buffer( $finfo, $img_data );
             finfo_close( $finfo );
         }
+
+        $related_links = get_post_meta( get_the_ID(), '_related_links', true );
+        $related_count = 0;
 		?>
 		<item>
 			<title><?php the_title_rss(); ?></title>
@@ -178,6 +181,22 @@ class ExtendGunosy extends Gunosy {
 			<gnf:modified><?php echo $this->to_local_time( get_post_modified_time( 'Y-m-d H:i:s' ), 'r', 'Asia/Tokyo' ) ?></gnf:modified>
             <?php if ( $thumbnail_url ) : ?>
                 <enclosure url="<?= $thumbnail_url; ?>" type="<?= $mime_type; ?>" length="0" />
+            <?php endif; ?>
+            <?php if ( $related_links ) : ?>
+                <?php foreach ( $related_links as $link ) : ?>
+                    <?php
+                        $related_url = $link['url'];
+                        $related_title = $link['title'];
+
+                        if ( $related_url && $related_title ) :
+                            if ( $related_count >= 3 ) {
+                                break;
+                            }
+                            $related_count++;
+                    ?>
+                        <gnf:relatedLink link="<?php echo esc_url( $related_url ); ?>" title="<?php echo esc_attr( $related_title ); ?>" />
+                    <?php endif; ?>
+                <?php endforeach; ?>
             <?php endif; ?>
 			<?php
 			do_action( 'rss2_item', [ $this, 'rss_add_item' ] );
