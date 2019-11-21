@@ -144,6 +144,16 @@ EOM;
 			'side',
 			'high'
 		);
+/*
+        add_meta_box(
+            'trs_feed_yahoo_checkbox',
+            __( 'Yahoo Feed Check', 'trs_feed' ),
+            [ $this, 'callback_yahoo_set_template' ],
+            $target_post_types,
+            'side',
+            'high'
+        );
+*/
 	}
 
 	/**
@@ -194,6 +204,25 @@ EOS;
 			}
 		}
 	}
+
+    /**
+     * チェックボックテンプレート
+     */
+    public function callback_yahoo_set_template() {
+
+        $yahoo = true;
+        if ( $yahoo ) {
+            echo <<<EOS
+	<div>
+		<label>
+			<input type="checkbox" name="yahoo" value="1">Yahoo
+		</label>
+		<div class="description">公開・削除時にYahooのサーバに送信されます。</div>
+	</div>
+EOS;
+
+        }
+    }
 
 	/**
 	 * 記事保存時にチェックボックス内容を保存する

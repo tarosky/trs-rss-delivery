@@ -142,7 +142,7 @@ class Gunosy extends AbstractFeed {
 			<?php endif; ?>
 			<description><![CDATA[<?php echo $content; ?>]]></description>
 			<content:encoded><![CDATA[<?php echo $content; ?>]]></content:encoded>
-			<media:status><?php echo $status; ?></media:status>
+			<media:status state="<?php echo $status; ?>" />
 			<pubDate><?php echo $this->to_local_time( get_the_time( 'Y-m-d H:i:s' ), 'r', 'Asia/Tokyo' ) ?></pubDate>
 			<dc:creator><?php the_author(); ?></dc:creator>
 			<gnf:modified><?php echo $this->to_local_time( get_post_modified_time( 'Y-m-d H:i:s' ), 'r', 'Asia/Tokyo' ) ?></gnf:modified>
