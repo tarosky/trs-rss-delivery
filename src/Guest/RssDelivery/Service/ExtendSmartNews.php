@@ -23,7 +23,7 @@ class ExtendSmartNews extends SmartNews {
     protected $id = 'smartnews';
     protected $label = 'SmartNews';
 
-    protected $target_post_types = [ 'column', 'news', 'restaurant', 'hyakusai', 'kojocho'];
+    protected $target_post_types = [ 'news', 'restaurant', 'hyakusai', 'kojocho'];
 
 	/**
 	 * Feedを作り出す条件を指定する
@@ -91,7 +91,26 @@ class ExtendSmartNews extends SmartNews {
 	 * rss2.0をベースに作成
 	 */
 	public function do_feed() {
+        global $wp_query;
+        global $post;
+
 		$this->xml_header();
+
+        $shortage_posts = $wp_query->get_posts();
+        $columns = get_posts( [
+            'post_type' => 'column',
+            'posts_per_page' => $this->per_page,
+            'post_status'   => [ 'publish', 'trash' ],
+        ] );
+
+        $all_posts = array_merge( $shortage_posts, $columns );
+        $sort_keys = [];
+        foreach($all_posts as $key => $value)
+        {
+            $sort_keys[$key] = $value->post_date;
+        }
+        array_multisort($sort_keys, SORT_DESC, $all_posts);
+        $all_posts = array_slice( $all_posts, 0, $this->per_page );
 
         $logo_url = '';
         if( function_exists( 'trs_rss_get_logo' ) ) {
@@ -124,11 +143,19 @@ class ExtendSmartNews extends SmartNews {
 			<?php
 			do_action( 'rss_add_channel', [ $this, 'rss_add_channel' ] );
 
-			while ( have_posts() ) :
-				the_post();
-				$this->render_item( get_post() );
-				?>
-			<?php endwhile; ?>
+/*
+            while ( have_posts() ) :
+                the_post();
+                $this->render_item( get_post() );
+            endwhile;
+*/
+            foreach( $all_posts as $post ) :
+                setup_postdata( $post );
+                $this->render_item( $post );
+            endforeach;
+            wp_reset_postdata();
+        ?>
+
 		</channel>
 		</rss>
 		<?php

@@ -17,7 +17,7 @@ use WP_Query;
 class ExtendLine extends Line {
     protected $id = 'line';
     protected $label = 'Line';
-    protected $target_post_types = [ 'column', 'news', 'restaurant', 'hyakusai', 'kojocho'];
+    protected $target_post_types = [ 'news', 'restaurant', 'hyakusai', 'kojocho'];
 
 	/**
 	 * Feedを作り出す条件を指定する
@@ -90,8 +90,28 @@ class ExtendLine extends Line {
 	 * rss2.0をベースに作成
 	 */
 	public function do_feed() {
-		$this->xml_header();
+        global $wp_query;
+        global $post;
+
+        $this->xml_header();
 		do_action( 'rss_tag_pre', 'rss2' );
+
+        $shortage_posts = $wp_query->get_posts();
+        $columns = get_posts( [
+            'post_type' => 'column',
+            'posts_per_page' => $this->per_page,
+            'post_status'   => [ 'publish', 'trash' ],
+        ] );
+
+        $all_posts = array_merge( $shortage_posts, $columns );
+        $sort_keys = [];
+        foreach($all_posts as $key => $value)
+        {
+            $sort_keys[$key] = $value->post_date;
+        }
+        array_multisort($sort_keys, SORT_DESC, $all_posts);
+        $all_posts = array_slice( $all_posts, 0, $this->per_page );
+
 		?>
 		<rss version="2.0"
 			xmlns:oa="http://news.line.me/rss/1.0/oa"
@@ -109,11 +129,19 @@ class ExtendLine extends Line {
 			<?php
 			do_action( 'rss_add_channel', [ $this, 'rss_add_channel' ] );
 
-			while ( have_posts() ) :
-				the_post();
-				$this->render_item( get_post() );
-				?>
-			<?php endwhile; ?>
+/*
+            while ( have_posts() ) :
+                the_post();
+                $this->render_item( get_post() );
+            endwhile;
+*/
+            foreach( $all_posts as $post ) :
+                setup_postdata( $post );
+                $this->render_item( $post );
+            endforeach;
+            wp_reset_postdata();
+        ?>
+
 		</channel>
 		</rss>
 		<?php
@@ -126,6 +154,7 @@ class ExtendLine extends Line {
 	 */
 	protected function render_item( $post ) {
 		$content = get_the_content_feed( 'rss2' );
+        $content = str_replace( array("\r", "\n"), '', $content);
 		$status  = $post->post_status === 'publish' ? '2' : '0';
 
         $thumbnail_url = $mime_type = '';
