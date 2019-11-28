@@ -17,7 +17,7 @@ use WP_Query;
 class ExtendGunosy extends Gunosy {
     protected $id = 'gunosy';
     protected $label = 'Gunosy';
-    protected $target_post_types = [ 'news', 'restaurant', 'hyakusai', 'kojocho'];
+    protected $target_post_types = [ 'news', 'restaurant', 'hyakusai', 'kojocho', 'column'];
 
 	/**
 	 * Feedを作り出す条件を指定する
@@ -88,11 +88,20 @@ class ExtendGunosy extends Gunosy {
 		$this->xml_header();
 		do_action( 'rss_tag_pre', 'rss2' );
 
+        $dm = DeliveryManager::instance();
+        $id = $this->get_id();
         $shortage_posts = $wp_query->get_posts();
         $columns = get_posts( [
             'post_type' => 'column',
             'posts_per_page' => $this->per_page,
             'post_status'   => [ 'publish', 'trash' ],
+            'meta_query'    => [
+                [
+                    'key'     => $dm->get_meta_name(),
+                    'value'   => sprintf( '"%s"', $id ),
+                    'compare' => 'REGEXP',
+                ],
+            ]
         ] );
 
         $all_posts = array_merge( $shortage_posts, $columns );
@@ -186,6 +195,12 @@ class ExtendGunosy extends Gunosy {
             $finfo = finfo_open( FILEINFO_MIME_TYPE );
             $mime_type = finfo_buffer( $finfo, $img_data );
             finfo_close( $finfo );
+        } else {
+            if ( has_post_thumbnail() ) {
+                $thumbnail_url = get_the_post_thumbnail_url( $post, 'full' );
+                $thumbnail_id = get_post_thumbnail_id( $post->ID );
+                $mime_type = get_post_mime_type( $thumbnail_id );
+            }
         }
 
         $related_links = get_post_meta( get_the_ID(), '_related_links', true );

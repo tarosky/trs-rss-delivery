@@ -17,7 +17,7 @@ use WP_Query;
 class ExtendLine extends Line {
     protected $id = 'line';
     protected $label = 'Line';
-    protected $target_post_types = [ 'news', 'restaurant', 'hyakusai', 'kojocho'];
+    protected $target_post_types = [ 'news', 'restaurant', 'hyakusai', 'kojocho', 'column'];
 
 	/**
 	 * Feedを作り出す条件を指定する
@@ -96,11 +96,20 @@ class ExtendLine extends Line {
         $this->xml_header();
 		do_action( 'rss_tag_pre', 'rss2' );
 
+        $dm = DeliveryManager::instance();
+        $id = $this->get_id();
         $shortage_posts = $wp_query->get_posts();
         $columns = get_posts( [
             'post_type' => 'column',
             'posts_per_page' => $this->per_page,
             'post_status'   => [ 'publish', 'trash' ],
+            'meta_query'    => [
+                [
+                    'key'     => $dm->get_meta_name(),
+                    'value'   => sprintf( '"%s"', $id ),
+                    'compare' => 'REGEXP',
+                ],
+            ]
         ] );
 
         $all_posts = array_merge( $shortage_posts, $columns );
@@ -153,12 +162,46 @@ class ExtendLine extends Line {
 	 * @param \WP_Post $post 投稿記事.
 	 */
 	protected function render_item( $post ) {
-		$content = get_the_content_feed( 'rss2' );
-        $content = str_replace( array("\r", "\n"), '', $content);
+        $content = get_the_content_feed( 'rss2' );
+//        $content = str_replace( array("\r", "\n"), '', $content);
+
+        // twitterやinstagramのブロック引用を残す
+        $content = preg_replace_callback( '#<blockquote([^>]*?)>(.*?)</blockquote>#us', function($matches) {
+            if ( false !== strpos( $matches[1], 'twitter' ) ) {
+                return $matches[0];
+            } elseif ( false !== strpos( $matches[1], 'instagram-media' ) ) {
+                return $matches[0];
+            } else {
+                return '';
+            }
+        }, $content );
+        // twitterやinstagramのscriptを残す
+        $content = preg_replace_callback( '#<script([^>]*?)(.*?)</script>#us', function($matches) {
+            if ( false !== strpos( $matches[0], 'platform.twitter.com' ) ) {
+                return $matches[0];
+            } elseif ( false !== strpos( $matches[0], 'platform.instagram.com' ) ) {
+                return $matches[0];
+            } else {
+                return '';
+            }
+        }, $content );
+        // ショートコード消す
+        $content = strip_shortcodes( $content );
+        // OembedになりそうなURLだけの行を消す
+        $content = implode( "\n", array_filter( explode( "\r\n", $content ), function( $row ) {
+            return ! preg_match( '#^https?://[a-zA-Z0-9\.\-\?=_/]+$#', $row );
+        } ) );
+        // 3行空白が続いたら圧縮
+        $content = preg_replace( '/\\n{3,}/', "\n\n", $content );
+
+//        $content = strip_tags( nl2br( $content ), '<h1><a><blockquote><iframe><script>' );
+        $content = strip_tags( nl2br( $content ), '<h1><a><img><blockquote><iframe><script>' );
+
 		$status  = $post->post_status === 'publish' ? '2' : '0';
 
         $thumbnail_url = $mime_type = '';
         $images = get_post_meta( $post->ID, '_images', true );
+
         if ( $images ) {
             $image = current( $images );
             if ( ! empty( $image['url'] ) ) :
@@ -171,6 +214,12 @@ class ExtendLine extends Line {
             $finfo = finfo_open( FILEINFO_MIME_TYPE );
             $mime_type = finfo_buffer( $finfo, $img_data );
             finfo_close( $finfo );
+        } else {
+            if ( has_post_thumbnail() ) {
+                $thumbnail_url = get_the_post_thumbnail_url( $post, 'full' );
+                $thumbnail_id = get_post_thumbnail_id( $post->ID );
+                $mime_type = get_post_mime_type( $thumbnail_id );
+            }
         }
 
         $related_links = get_post_meta( get_the_ID(), '_related_links', true );

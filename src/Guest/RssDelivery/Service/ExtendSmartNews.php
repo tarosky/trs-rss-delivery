@@ -23,7 +23,7 @@ class ExtendSmartNews extends SmartNews {
     protected $id = 'smartnews';
     protected $label = 'SmartNews';
 
-    protected $target_post_types = [ 'news', 'restaurant', 'hyakusai', 'kojocho'];
+    protected $target_post_types = [ 'news', 'restaurant', 'hyakusai', 'kojocho', 'column'];
 
 	/**
 	 * Feedを作り出す条件を指定する
@@ -96,11 +96,20 @@ class ExtendSmartNews extends SmartNews {
 
 		$this->xml_header();
 
+        $dm = DeliveryManager::instance();
+        $id = $this->get_id();
         $shortage_posts = $wp_query->get_posts();
         $columns = get_posts( [
             'post_type' => 'column',
             'posts_per_page' => $this->per_page,
             'post_status'   => [ 'publish', 'trash' ],
+            'meta_query'    => [
+                [
+                    'key'     => $dm->get_meta_name(),
+                    'value'   => sprintf( '"%s"', $id ),
+                    'compare' => 'REGEXP',
+                ],
+            ]
         ] );
 
         $all_posts = array_merge( $shortage_posts, $columns );
@@ -178,6 +187,10 @@ class ExtendSmartNews extends SmartNews {
             elseif ( ! empty( $image['file'] ) ) :
                 $thumbnail_url = $image['file'];
             endif;
+        } else {
+            if ( has_post_thumbnail() ) {
+                $thumbnail_url = get_the_post_thumbnail_url( $post, 'full' );
+            }
         }
 
 		$status        = $post->post_status === 'publish' ? 'active' : 'deleted';
