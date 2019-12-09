@@ -200,6 +200,10 @@ class ExtendSmartNews extends SmartNews {
 			$cat_name_list[] = $cat->name;
 		}
 
+        $author_name = '';
+		if ( function_exists( 'paidmedia_get_the_post_author_name' ) ) {
+            $author_name = paidmedia_get_the_post_author_name();
+        }
 		?>
 			<item>
 				<title><?php the_title_rss(); ?></title>
@@ -211,8 +215,8 @@ class ExtendSmartNews extends SmartNews {
 					<category><?php echo implode( ',', $cat_name_list ); ?></category>
 				<?php endif; ?>
 				<content:encoded><![CDATA[<?php echo $content; ?>]]></content:encoded>
-                <?php if( get_the_author() ) : ?>
-                    <dc:creator><?php the_author(); ?></dc:creator>
+                <?php if( $author_name ) : ?>
+                    <dc:creator><?php echo esc_html( $author_name ); ?></dc:creator>
                 <?php endif; ?>
 				<?php if ( $thumbnail_url ) : ?>
 					<media:thumbnail url="<?php echo esc_url( $thumbnail_url ); ?>" />
