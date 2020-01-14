@@ -237,9 +237,15 @@ class ExtendLine extends Line {
         $related_links = get_post_meta( get_the_ID(), $related_field, true );
         $related_count = 0;
 
+        $guid = get_the_guid();
+        if ( $post->post_type === 'yahoo' ) {
+            if ( $base_url = get_post_meta( get_the_ID(), '_base_url', true ) ) {
+                $guid = $base_url;
+            }
+        }
 		?>
 			<item>
-				<guid><?php the_guid(); ?></guid>
+				<guid><?php echo esc_url($guid); ?></guid>
 				<title><![CDATA[<?php the_title_rss(); ?>]]></title>
 				<link><?php the_permalink_rss(); ?></link>
 				<description><![CDATA[<?php echo $content; ?>]]></description>

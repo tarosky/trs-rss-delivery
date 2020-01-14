@@ -217,11 +217,18 @@ class ExtendSmartNews extends SmartNews {
 		if ( function_exists( 'paidmedia_get_the_post_author_name' ) ) {
             $author_name = paidmedia_get_the_post_author_name();
         }
+
+        $guid = get_the_guid();
+        if ( $post->post_type === 'yahoo' ) {
+            if ( $base_url = get_post_meta( get_the_ID(), '_base_url', true ) ) {
+                $guid = $base_url;
+            }
+        }
 		?>
 			<item>
 				<title><?php the_title_rss(); ?></title>
 				<link><?php the_permalink_rss(); ?></link>
-				<guid><?php the_permalink_rss(); ?></guid>
+                <guid><?php echo esc_url($guid); ?></guid>
 				<description><![CDATA[<?php echo $content; ?>]]></description>
 				<pubDate><?php echo $this->to_local_time( get_the_time( 'Y-m-d H:i:s' ), 'r', 'Asia/Tokyo' ) ?></pubDate>
 				<?php if ( count( $cat_name_list ) ) : ?>
