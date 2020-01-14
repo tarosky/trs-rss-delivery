@@ -17,7 +17,7 @@ use WP_Query;
 class ExtendLine extends Line {
     protected $id = 'line';
     protected $label = 'Line';
-    protected $target_post_types = [ 'news', 'restaurant', 'hyakusai', 'kojocho', 'column'];
+    protected $target_post_types = [ 'news', 'restaurant', 'hyakusai', 'kojocho', 'column', 'yahoo'];
 
 	/**
 	 * Feedを作り出す条件を指定する
@@ -112,7 +112,20 @@ class ExtendLine extends Line {
             ]
         ] );
 
-        $all_posts = array_merge( $shortage_posts, $columns );
+        $yahoos = get_posts( [
+            'post_type' => 'yahoo',
+            'posts_per_page' => $this->per_page,
+            'post_status'   => [ 'publish', 'trash' ],
+            'meta_query'    => [
+                [
+                    'key'     => $dm->get_meta_name(),
+                    'value'   => sprintf( '"%s"', $id ),
+                    'compare' => 'REGEXP',
+                ],
+            ]
+        ] );
+
+        $all_posts = array_merge( $shortage_posts, $columns, $yahoos );
         $sort_keys = [];
         foreach($all_posts as $key => $value)
         {
@@ -138,12 +151,6 @@ class ExtendLine extends Line {
 			<?php
 			do_action( 'rss_add_channel', [ $this, 'rss_add_channel' ] );
 
-/*
-            while ( have_posts() ) :
-                the_post();
-                $this->render_item( get_post() );
-            endwhile;
-*/
             foreach( $all_posts as $post ) :
                 setup_postdata( $post );
                 $this->render_item( $post );
@@ -210,7 +217,7 @@ class ExtendLine extends Line {
                 $thumbnail_url = $image['file'];
             endif;
 
-            $img_data = file_get_contents( $thumbnail_url );
+            $img_data = @file_get_contents( $thumbnail_url );
             $finfo = finfo_open( FILEINFO_MIME_TYPE );
             $mime_type = finfo_buffer( $finfo, $img_data );
             finfo_close( $finfo );
@@ -222,8 +229,14 @@ class ExtendLine extends Line {
             }
         }
 
-        $related_links = get_post_meta( get_the_ID(), '_related_links', true );
+        $related_field = '_related_links';
+        if ( $post->post_type === 'yahoo' ) {
+            $related_field = '_related_rss_links';
+        }
+
+        $related_links = get_post_meta( get_the_ID(), $related_field, true );
         $related_count = 0;
+
 		?>
 			<item>
 				<guid><?php the_guid(); ?></guid>

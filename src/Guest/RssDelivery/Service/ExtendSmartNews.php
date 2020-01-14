@@ -23,7 +23,7 @@ class ExtendSmartNews extends SmartNews {
     protected $id = 'smartnews';
     protected $label = 'SmartNews';
 
-    protected $target_post_types = [ 'news', 'restaurant', 'hyakusai', 'kojocho', 'column'];
+    protected $target_post_types = [ 'news', 'restaurant', 'hyakusai', 'kojocho', 'column', 'yahoo'];
 
 	/**
 	 * Feedを作り出す条件を指定する
@@ -112,7 +112,20 @@ class ExtendSmartNews extends SmartNews {
             ]
         ] );
 
-        $all_posts = array_merge( $shortage_posts, $columns );
+        $yahoos = get_posts( [
+            'post_type' => 'yahoo',
+            'posts_per_page' => $this->per_page,
+            'post_status'   => [ 'publish', 'trash' ],
+            'meta_query'    => [
+                [
+                    'key'     => $dm->get_meta_name(),
+                    'value'   => sprintf( '"%s"', $id ),
+                    'compare' => 'REGEXP',
+                ],
+            ]
+        ] );
+
+        $all_posts = array_merge( $shortage_posts, $columns, $yahoos );
         $sort_keys = [];
         foreach($all_posts as $key => $value)
         {
