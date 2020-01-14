@@ -224,17 +224,17 @@ class ExtendGunosy extends Gunosy {
         $related_links = get_post_meta( get_the_ID(), $related_field, true );
         $related_count = 0;
 
-        $guid = get_the_guid();
+        $link = get_the_permalink();
         if ( $post->post_type === 'yahoo' ) {
             if ( $base_url = get_post_meta( get_the_ID(), '_base_url', true ) ) {
-                $guid = $base_url;
+                $link = $base_url;
             }
         }
 		?>
 		<item>
 			<title><?php the_title_rss(); ?></title>
-			<link><?php the_permalink_rss(); ?></link>
-			<guid isPermaLink="false"><?php echo esc_url($guid); ?></guid>
+            <link><?php echo esc_url( $link ); ?></link>
+            <guid isPermaLink="false"><?php the_guid(); ?></guid>
             <gnf:category>economy</gnf:category>
 			<?php if ( $keywords ) : ?>
 				<gnf:keyword><?php echo esc_html( $keywords ); ?></gnf:keyword>
